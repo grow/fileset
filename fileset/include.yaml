@@ -1,0 +1,10 @@
+handlers:
+# TODO(stevenle): implement a frontend for auth tokens.
+# - url: /_fs/admin/.*
+#   script: fileset.server.admin.app
+#   secure: always
+#   login: admin
+
+- url: /_fs/api/.*
+  script: fileset.server.api.app
+  secure: always
