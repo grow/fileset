@@ -10,7 +10,6 @@ setuptools.setup(
     package_data={
         'fileset': ['include.yaml'],
     },
-    packages=[
-        'fileset',
-    ],
+    packages=setuptools.find_packages(),
+    install_requires=['GoogleAppEngineCloudStorageClient'],
 )

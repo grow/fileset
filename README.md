@@ -24,7 +24,7 @@ includes:
 - extensions/fileset/
 
 handlers:
-- /.*
+- url: /.*
   script: extensions.fileset.server.main.app
 
 skip_files:
@@ -69,7 +69,7 @@ See `fileset/config.py` for full list of config options.
 ```yaml
 extensions:
   preprocessors:
-  - extensions.fileset.FilesetPreprocessor
+  - extensions.fileset.grow.ext.FilesetPreprocessor
 
 preprocessors:
 - kind: fileset
