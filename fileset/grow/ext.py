@@ -44,6 +44,8 @@ __all__ = ('FilesetDestination', 'FilesetPreprocessor')
 OBJECTCACHE_ID = 'fileset'
 OBJECTCACHE_ID_LOCAL = 'fileset.local'
 
+CONFIG_PATH = '/.fileset.json'
+
 
 class FilesetPreprocessor(grow.Preprocessor):
     """Preprocessor for grow that sets up the fileset deploy destination."""
@@ -138,7 +140,17 @@ class FilesetDestination(destinations.BaseDestination):
                 logging.info('Aborted.')
                 return
 
-        fs = fileset.FilesetClient(server, 'token')
+        if self.pod.file_exists(CONFIG_PATH):
+            token = self.pod.read_json(CONFIG_PATH)['token']
+        elif server.startswith('localhost'):
+            # Localhost doens't require an auth token.
+            token = ''
+        else:
+            # TODO(stevenle): print instructions on how to create an auth token.
+            logging.error('"token" is required in {}'.format(CONFIG_PATH))
+            return
+
+        fs = fileset.FilesetClient(server, token)
         manifest = {
             'commit': self.get_commit(),
             'files': [],

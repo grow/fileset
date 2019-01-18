@@ -40,7 +40,7 @@ skip_files:
 - ^(.*/)?index\.yaml
 - ^(.*/)?index\.yml
 - ^(.*/)?run_tests.py
-- (?!extensions|appengine_config\.py)
+- (?!extensions\/fileset|appengine_config\.py)
 ```
 
 4) Add `appengine_config.py`
@@ -125,6 +125,13 @@ Go to https://APPID.appspot.com/_ah/admin/interactive and run the following:
 import appengine_config
 from fileset import auth
 print auth.create_auth_token('DESCRIPTION')
+```
+
+8) Add to `.gitignore`
+
+```
+.fileset.json
+objectcache.fileset.local.json
 ```
 
 
