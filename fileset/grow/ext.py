@@ -183,5 +183,5 @@ class FilesetDestination(destinations.BaseDestination):
         elif branch == 'master':
             lines.append('  https://{}'.format(server))
         else:
-            lines.append('  https://{}-dot-{}'.format(server))
+            lines.append('  https://{}-dot-{}'.format(branch, server))
         logging.info('\n'.join(lines))
