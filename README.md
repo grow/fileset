@@ -24,6 +24,10 @@ includes:
 - extensions/fileset/
 
 handlers:
+- url: /_ah/admin/interactive.*
+  script: google.appengine.ext.admin.application
+  login: admin
+
 - url: /.*
   script: extensions.fileset.server.main.app
 
@@ -123,7 +127,7 @@ Go to https://APPID.appspot.com/_ah/admin/interactive and run the following:
 
 ```python
 import appengine_config
-from fileset import auth
+from fileset.server import auth
 print auth.create_auth_token('DESCRIPTION')
 ```
 
