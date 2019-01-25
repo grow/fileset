@@ -42,6 +42,9 @@ class ConfigDefaults(object):
     #     * `dest` is the destination url, which can accept $param values
     REDIRECTS = tuple()
 
+    # Whether to require authentication, even on Env.PROD.
+    REQUIRE_AUTH = False
+
     # Whether to enforce https for all Env.PROD requests.
     REQUIRE_HTTPS = False
 
@@ -53,4 +56,5 @@ AUTHORIZED_USERS = config.AUTHORIZED_USERS
 CANONICAL_DOMAIN = config.CANONICAL_DOMAIN
 DEFAULT_BRANCH = config.DEFAULT_BRANCH
 REDIRECTS = config.REDIRECTS
+REQUIRE_AUTH = config.REQUIRE_AUTH
 REQUIRE_HTTPS = config.REQUIRE_HTTPS

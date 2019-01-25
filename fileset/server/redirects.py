@@ -12,6 +12,7 @@ from google.appengine.api import users
 
 CANONICAL_DOMAIN = config.CANONICAL_DOMAIN
 REDIRECTS = config.REDIRECTS
+REQUIRE_AUTH = config.REQUIRE_AUTH
 REQUIRE_HTTPS = config.REQUIRE_HTTPS
 
 
@@ -73,7 +74,7 @@ class RedirectMiddleware(object):
                 return self.redirect(redirect_uri, code=302)
 
         # Require authorized login on Env.STAGING.
-        if env == utils.Env.STAGING:
+        if REQUIRE_AUTH or env == utils.Env.STAGING:
             user = users.get_current_user()
             if not user:
                 login_url = users.create_login_url(request.path_qs)
