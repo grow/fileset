@@ -25,13 +25,20 @@ Sample podspec:
       prod:
         destination: fileset
         host: APPID.appspot.com
+        timed_deploys:
+          env_name: FILESET_TIMED_DEPLOY_PROD  # YYYY-MM-DD HH:MM
+          timezone: America/Los_Angeles
         env:
           name: prod
 """
 
+import datetime
 import json
 import logging
+import os
+import time
 import grow
+import pytz
 from grow.common import utils
 from grow.deployments import deployments
 from grow.deployments.destinations import base as destinations
@@ -70,6 +77,11 @@ class FilesetPreprocessor(grow.Preprocessor):
         pass
 
 
+class TimedDeployConfig(messages.Message):
+    env_name = messages.StringField(1)
+    timezone = messages.StringField(2)
+
+
 class FilesetDestination(destinations.BaseDestination):
     """Grow deploy destination that deploys to a fileset server."""
 
@@ -79,6 +91,7 @@ class FilesetDestination(destinations.BaseDestination):
         env = messages.MessageField(env.EnvConfig, 1)
         server = messages.StringField(2)
         branch = messages.StringField(3)
+        timed_deploys = messages.MessageField(TimedDeployConfig, 4)
 
     def __init__(self, *args, **kwargs):
         super(FilesetDestination, self).__init__(*args, **kwargs)
@@ -118,7 +131,28 @@ class FilesetDestination(destinations.BaseDestination):
             'sha': sha,
             'message': message,
         }
-        return commit
+
+    def get_timed_deploy(self):
+        if not self.config.timed_deploys:
+            return None
+        env_name = self.config.timed_deploys.env_name
+        if not env_name:
+            return None
+        datetime_str = os.environ.get(env_name)
+        if not datetime_str:
+            return None
+
+        timezone = self.config.timed_deploys.timezone or 'Americas/Los_Angeles'
+        timestamp = self._get_timestamp(datetime_str, timezone)
+        now = int(time.time())
+        if timestamp <= now:
+            return None
+
+        return {
+            'datetime': datetime_str,
+            'timezone': timezone,
+            'timestamp': timestamp,
+        }
 
     def deploy(self, content_generator, stats=None, repo=None, dry_run=False,
                confirm=False, test=True, is_partial=False,
@@ -129,22 +163,28 @@ class FilesetDestination(destinations.BaseDestination):
 
         server = self.config.server
         branch = self.get_branch()
+        timed_deploy = self.get_timed_deploy()
+
         if confirm:
-            text = '\n'.join([
+            lines = [
                 '',
                 'server: {}'.format(server),
                 'branch: {}'.format(branch),
-                'Proceed to deploy?',
-            ])
+            ]
+            if timed_deploy:
+                lines.append('timed deploy: {} ({})'.format(
+                    timed_deploy['datetime'], timed_deploy['timezone']))
+            lines.append('Proceed to deploy?')
+            text = '\n'.join(lines)
             if not utils.interactive_confirm(text):
                 logging.info('Aborted.')
                 return
 
-        if self.pod.file_exists(CONFIG_PATH):
-            token = self.pod.read_json(CONFIG_PATH)['token']
-        elif server.startswith('localhost'):
+        if server.startswith('localhost'):
             # Localhost doens't require an auth token.
             token = ''
+        if self.pod.file_exists(CONFIG_PATH):
+            token = self.pod.read_json(CONFIG_PATH)['token']
         else:
             # TODO(stevenle): print instructions on how to create an auth token.
             logging.error('"token" is required in {}'.format(CONFIG_PATH))
@@ -169,19 +209,41 @@ class FilesetDestination(destinations.BaseDestination):
         response = fs.upload_manifest(manifest)
         manifest_id = response.json()['manifest_id']
 
-        fs.set_branch_manifest(branch, manifest_id)
+        deploy_timestamp = None
+        if timed_deploy:
+            deploy_timestamp = timed_deploy['timestamp']
+
+        fs.set_branch_manifest(
+            branch, manifest_id, deploy_timestamp=deploy_timestamp)
         lines = [
             '',
             'saved branch manifest:',
             '  branch: {}'.format(branch),
             '  manifest id: {}'.format(manifest_id),
+        ]
+        if timed_deploy:
+            lines.append('  timed deploy: {} ({})'.format(
+                timed_deploy['datetime'], timed_deploy['timezone']))
+
+        lines.extend([
             '',
             'url:',
-        ]
+        ])
         if server.startswith('localhost'):
             lines.append('  http://{}'.format(server))
+        elif deploy_timestamp:
+            lines.append(
+                '  https://manifest-{}-dot-{}'.format(manifest_id, server))
         elif branch == 'master':
             lines.append('  https://{}'.format(server))
         else:
             lines.append('  https://{}-dot-{}'.format(branch, server))
+
         logging.info('\n'.join(lines))
+
+    def _get_timestamp(self, datetime_str, timezone):
+        dt = datetime.datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
+        localized_dt = pytz.timezone(timezone).localize(dt)
+        diff = localized_dt - datetime.datetime(1970, 1, 1, tzinfo=pytz.utc)
+        ts = int(diff.total_seconds())
+        return ts

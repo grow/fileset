@@ -11,5 +11,8 @@ setuptools.setup(
         'fileset': ['include.yaml'],
     },
     packages=setuptools.find_packages(),
-    install_requires=['GoogleAppEngineCloudStorageClient'],
+    install_requires=[
+        'GoogleAppEngineCloudStorageClient',
+        'pytz',
+    ],
 )
