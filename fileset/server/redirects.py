@@ -59,7 +59,7 @@ class RedirectMiddleware(object):
         if CANONICAL_DOMAIN:
             if env == utils.Env.PROD and domain != CANONICAL_DOMAIN:
                 redirect_uri = '{}://{}{}'.format(
-                    request.scheme, domain, request.path_qs)
+                    request.scheme, CANONICAL_DOMAIN, request.path_qs)
                 logging.info('redirecting: 302 {} => {}'.format(
                     request.url, redirect_uri))
                 return self.redirect(redirect_uri, code=302)
