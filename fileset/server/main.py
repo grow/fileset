@@ -30,7 +30,11 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         # Determine the branch to use from the URL, and then fetch the branch's
         # fileset manifest.
         branch = utils.get_branch(self.request)
-        manifest = manifests.get_branch_manifest(branch)
+        if branch.startswith('manifest-') and branch[9:].isdigit():
+            manifest_id = int(branch[9:])
+            manifest = manifests.get(manifest_id)
+        else:
+            manifest = manifests.get_branch_manifest(branch)
         if not manifest:
             manifest = manifests.get_branch_manifest(utils.DEFAULT_BRANCH)
             return self.serve_404(manifest, path)
