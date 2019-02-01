@@ -104,6 +104,14 @@ deployments:
 gcloud app deploy --project=APPID --promote app.yaml
 ```
 
+Optional: if you plan to use the timed deployments feature, you'll also need to
+deploy a cron.yaml and index.yaml. A sample config files can be found in
+`extensions/fileset/cron.yaml` and `extensions/fileset/index.yaml`
+
+```
+gcloud app deploy --project=APPID cron.yaml index.yaml
+```
+
 7) Generate an auth token
 
 Future:

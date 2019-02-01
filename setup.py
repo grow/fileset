@@ -8,7 +8,11 @@ setuptools.setup(
     author='Grow SDK Authors',
     author_email='hello@grow.io',
     package_data={
-        'fileset': ['include.yaml'],
+        'fileset': [
+            'cron.yaml',
+            'include.yaml',
+            'index.yaml',
+        ],
     },
     packages=setuptools.find_packages(),
     install_requires=[

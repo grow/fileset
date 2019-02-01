@@ -1,0 +1,5 @@
+indexes:
+- kind: FilesetTimedDeploy
+  properties:
+  - name: deployed
+  - name: deploy_timestamp
