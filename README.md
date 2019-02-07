@@ -1,5 +1,7 @@
 # Fileset Server for App Engine
 
+Fileset is a high-performance static file server for App Engine meant for high-traffic sites. Features include: preview branches backed by Google authentication, international fallbacks, atomic deployments, and timed deployments.
+
 ## Setup
 
 1) Add fileset to `extensions.txt`
