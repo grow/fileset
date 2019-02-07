@@ -48,6 +48,14 @@ class ConfigDefaults(object):
     # Whether to enforce https for all Env.PROD requests.
     REQUIRE_HTTPS = False
 
+    # HTTP response headers to append to certain requests. Right now, only
+    # supports headers for HTML files.
+    RESPONSE_HEADERS = {
+        'html': {
+            'X-Frame-Options': 'deny',
+        },
+    }
+
 
 config = lib_config.register('fileset', ConfigDefaults.__dict__)
 
@@ -58,3 +66,4 @@ DEFAULT_BRANCH = config.DEFAULT_BRANCH
 REDIRECTS = config.REDIRECTS
 REQUIRE_AUTH = config.REQUIRE_AUTH
 REQUIRE_HTTPS = config.REQUIRE_HTTPS
+RESPONSE_HEADERS = config.RESPONSE_HEADERS

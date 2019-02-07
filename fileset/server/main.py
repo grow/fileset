@@ -4,6 +4,7 @@ import appengine_config
 
 import logging
 import os
+from fileset import config
 from fileset.server import blobs
 from fileset.server import manifests
 from fileset.server import redirects
@@ -25,7 +26,12 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         if path.endswith('.html'):
             # Use case-insensitive paths.
             path = path.lower()
-            # TODO(stevenle): support custom headers, like X-Frame-Options.
+
+            # Set custom HTML response headers from appengine_config.
+            html_headers = config.RESPONSE_HEADERS.get('html')
+            if html_headers:
+                for key, value in html_headers.iteritems():
+                    self.response.headers[key] = value
 
         # Determine the branch to use from the URL, and then fetch the branch's
         # fileset manifest.

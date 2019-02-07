@@ -44,7 +44,8 @@ skip_files:
 - ^(.*/)?index\.yaml
 - ^(.*/)?index\.yml
 - ^(.*/)?run_tests.py
-- (?!extensions\/fileset|appengine_config\.py)
+- ^extensions/(?!(__init__.py|cloudstorage|fileset)).*
+- (?!(extensions|appengine_config\.py)).*
 ```
 
 4) Add `appengine_config.py`
@@ -60,6 +61,9 @@ vendor.add(thirdparty_path)
 # List of emails that are authorized to access Env.STAGING.
 fileset_AUTHORIZED_USERS = (
     'example@gmail.com',
+)
+fileset_AUTHORIZED_ORGS = (
+    'example.com',
 )
 
 # Whether to enforce https for all Env.PROD requests.
@@ -136,7 +140,9 @@ Go to https://APPID.appspot.com/_ah/admin/interactive and run the following:
 ```python
 import appengine_config
 from fileset.server import auth
-print auth.create_auth_token('DESCRIPTION')
+
+token = auth.create_auth_token('DESCRIPTION')
+print '{"token": "%s"}' % token
 ```
 
 8) Add to `.gitignore`
