@@ -65,7 +65,8 @@ class RedirectMiddleware(object):
                 return self.redirect(redirect_uri, code=302)
 
         # Check for https (except on devappserver).
-        if REQUIRE_HTTPS:
+        upgrade_requests = request.headers.get('Upgrade-Insecure-Requests')
+        if REQUIRE_HTTPS or upgrade_requests == '1':
             if env != utils.Env.DEV and request.scheme != 'https':
                 redirect_uri = 'https://{}{}'.format(
                     domain, request.path_qs)
