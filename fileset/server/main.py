@@ -17,6 +17,9 @@ import webapp2
 
 class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
 
+    def head(self, *args, **kwargs):
+        self.get(*args, **kwargs)
+
     def get(self, *args, **kwargs):
         path = self.request.path
         _, ext = os.path.splitext(path)
@@ -66,23 +69,26 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             return
         self.response.headers['ETag'] = etag
 
-        gcs_path = blobs.get_gcs_path(sha)
-        blob_key = blobstore.create_gs_key('/gs' + gcs_path)
-        self.send_blob(blob_key)
+        if self.request.method != 'HEAD':
+            gcs_path = blobs.get_gcs_path(sha)
+            blob_key = blobstore.create_gs_key('/gs' + gcs_path)
+            self.send_blob(blob_key)
 
     def serve_404(self, manifest, path):
         self.response.status = 404
         if manifest and path.endswith('.html') and '/404.html' in manifest.paths:
-            # The blobstore download handler raises an error whenever the status
-            # code is anything other than 200, so write the contents of the
-            # 404.html file directly.
-            sha = manifest.paths['/404.html']
-            content = blobs.read(sha)
             self.response.headers['Content-Type'] = 'text/html'
-            self.response.out.write(content)
+            if self.request.method != 'HEAD':
+                # The blobstore download handler raises an error whenever the status
+                # code is anything other than 200, so write the contents of the
+                # 404.html file directly.
+                sha = manifest.paths['/404.html']
+                content = blobs.read(sha)
+                self.response.out.write(content)
         else:
             self.response.headers['Content-Type'] = 'text/plain'
-            self.response.out.write('404 Not Found')
+            if self.request.method != 'HEAD':
+                self.response.out.write('404 Not Found')
 
     def generate_intl_paths(self, path):
         """Generates a list of paths based on user's country & preferred langs.
