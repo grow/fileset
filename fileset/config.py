@@ -30,6 +30,12 @@ class ConfigDefaults(object):
     # URL. Requests to Env.PROD will always read from the DEFAULT_BRANCH.
     DEFAULT_BRANCH = 'master'
 
+    # The path format for internationalized/localized paths, where:
+    #
+    #     * `{locale}` can either be `<lang>_<country>` or just `<lang>`
+    #     * `{path}` is the request path, including the leading slash
+    INTL_PATH_FORMAT = '/intl/{locale}{path}'
+
     # A list of redirects, formatted as:
     #
     #     (code, source, dest)
@@ -63,6 +69,7 @@ AUTHORIZED_ORGS = config.AUTHORIZED_ORGS
 AUTHORIZED_USERS = config.AUTHORIZED_USERS
 CANONICAL_DOMAIN = config.CANONICAL_DOMAIN
 DEFAULT_BRANCH = config.DEFAULT_BRANCH
+INTL_PATH_FORMAT = config.INTL_PATH_FORMAT
 REDIRECTS = config.REDIRECTS
 REQUIRE_AUTH = config.REQUIRE_AUTH
 REQUIRE_HTTPS = config.REQUIRE_HTTPS

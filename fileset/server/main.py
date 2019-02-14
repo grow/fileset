@@ -130,23 +130,23 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         # Yield `/intl/<lang>_<country>/` paths.
         if hl:
             locale = '{lang}_{country}'.format(lang=hl, country=country)
-            yield '/intl/{locale}{path}'.format(locale=locale, path=path)
+            yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
             if '-' in hl:
                 lang = hl.split('-', 1)[0]
                 locale = '{lang}_{country}'.format(lang=lang, country=country)
-                yield '/intl/{locale}{path}'.format(locale=locale, path=path)
+                yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
         for lang in accept_langs:
             locale = '{lang}_{country}'.format(lang=lang, country=country)
-            yield '/intl/{locale}{path}'.format(locale=locale, path=path)
+            yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
 
         # Yield paths for `/intl/<lang>/` (no country).
         if hl:
-            yield '/intl/{locale}{path}'.format(locale=hl, path=path)
+            yield config.INTL_PATH_FORMAT.format(locale=hl, path=path)
             if '-' in hl:
                 lang = hl.split('-', 1)[0]
-                yield '/intl/{locale}{path}'.format(locale=lang, path=path)
+                yield config.INTL_PATH_FORMAT.format(locale=lang, path=path)
         for lang in accept_langs:
-            yield '/intl/{locale}{path}'.format(locale=lang, path=path)
+            yield config.INTL_PATH_FORMAT.format(locale=lang, path=path)
 
         yield path
 
