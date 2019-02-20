@@ -22,12 +22,13 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
 
     def get(self, *args, **kwargs):
         path = self.request.path
-        _, ext = os.path.splitext(path)
-        if not ext:
-            path = utils.safe_join(path, 'index.html')
         self.serve_path(path)
 
     def serve_path(self, path):
+        _, ext = os.path.splitext(path)
+        if not ext:
+            path = utils.safe_join(path, 'index.html')
+
         if path.endswith('.html'):
             # Use case-insensitive paths.
             path = path.lower()
