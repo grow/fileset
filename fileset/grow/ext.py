@@ -91,7 +91,9 @@ class FilesetDestination(destinations.BaseDestination):
         env = messages.MessageField(env.EnvConfig, 1)
         server = messages.StringField(2)
         branch = messages.StringField(3)
-        timed_deploys = messages.MessageField(TimedDeployConfig, 4)
+        # Prefix to append to the branch name when branch="auto" is used.
+        branch_prefix = messages.StringField(4)
+        timed_deploys = messages.MessageField(TimedDeployConfig, 5)
 
     def __init__(self, *args, **kwargs):
         super(FilesetDestination, self).__init__(*args, **kwargs)
@@ -120,7 +122,10 @@ class FilesetDestination(destinations.BaseDestination):
         if branch.startswith('feature/'):
             branch = branch[8:]
         branch = branch.replace('/', '-').lower()
-        return branch
+
+        # Append branch prefix.
+        branch_prefix = self.config.branch_prefix or ''
+        return branch_prefix + branch
 
     def get_commit(self):
         repo = utils.get_git_repo(self.pod.root)
@@ -183,7 +188,7 @@ class FilesetDestination(destinations.BaseDestination):
         if server.startswith('localhost'):
             # Localhost doens't require an auth token.
             token = ''
-        if self.pod.file_exists(CONFIG_PATH):
+        elif self.pod.file_exists(CONFIG_PATH):
             token = self.pod.read_json(CONFIG_PATH)['token']
         else:
             # TODO(stevenle): print instructions on how to create an auth token.
