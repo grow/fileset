@@ -15,6 +15,32 @@ from webob import acceptparse
 import webapp2
 
 
+ES_419_COUNTRIES = frozenset([
+    'AR',
+    'BO',
+    'CL',
+    'CO',
+    'CR',
+    'DO',
+    'EC',
+    'FK',
+    'GF',
+    'GT',
+    'GY',
+    'HN',
+    'MX',
+    'NI',
+    'PA',
+    'PE',
+    'PR',
+    'PY',
+    'SR',
+    'SV',
+    'UY',
+    'VE',
+])
+
+
 class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
 
     def head(self, *args, **kwargs):
@@ -141,6 +167,11 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         for lang in accept_langs:
             locale = '{lang}_{country}'.format(lang=lang, country=country)
             yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
+
+        # Yield special paths for es-419 countries.
+        if country.upper() in ES_419_COUNTRIES and 'es' in accept_langs:
+            yield config.INTL_PATH_FORMAT.format(locale='es_419', path=path)
+            yield config.INTL_PATH_FORMAT.format(locale='es-419', path=path)
 
         # Yield paths for `/intl/<lang>/` (no country).
         if hl:
