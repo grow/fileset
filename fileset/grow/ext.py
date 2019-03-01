@@ -204,7 +204,7 @@ class FilesetDestination(destinations.BaseDestination):
             'files': [],
         }
 
-        with futures.ThreadPoolExecutor(max_workers=5) as executor:
+        with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # Map of future => doc path.
             results = {}
             for rendered_doc in content_generator:
