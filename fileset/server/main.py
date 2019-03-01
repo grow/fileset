@@ -95,9 +95,30 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             blob_key = blobstore.create_gs_key('/gs' + gcs_path)
             self.send_blob(blob_key)
 
+    def serve_error(self, error_code, manifest=None):
+        self.response.status = error_code
+        _, ext = os.path.splitext(self.request.path)
+        if not ext or ext == '.html':
+            html_path = '/{}.html'.format(error_code)
+            if not manifest:
+                manifest = manifests.get_branch_manifest(utils.DEFAULT_BRANCH)
+            if manifest and html_path in manifest.paths:
+                self.response.headers['Content-Type'] = 'text/html'
+                if self.request.method != 'HEAD':
+                    # The blobstore download handler raises an error whenever
+                    # the status code is anything other than 200, so write the
+                    # contents of the {code}.html file directly to response.
+                    sha = manifest.paths[html_path]
+                    content = blobs.read(sha)
+                    self.response.out.write(content)
+                return
+
+        self.response.headers['Content-Type'] = 'text/plain'
+        if self.request.method != 'HEAD':
+            self.response.out.write(str(error_code) + '\n')
+
     def get_manifest(self):
-        # Determine the branch to use from the URL, and then fetch the branch's
-        # fileset manifest.
+        """Returns the manifest for the given request."""
         branch = utils.get_branch(self.request)
         if branch.startswith('manifest-') and branch[9:].isdigit():
             manifest_id = int(branch[9:])
@@ -105,26 +126,6 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         else:
             manifest = manifests.get_branch_manifest(branch)
         return manifest
-
-    def serve_error(self, error_code, manifest=None):
-        if not manifest:
-            manifest = manifests.get_branch_manifest(utils.DEFAULT_BRANCH)
-
-        self.response.status = error_code
-        html_path = '/{}.html'.format(error_code)
-        if manifest and path.endswith('.html') and html_path in manifest.paths:
-            self.response.headers['Content-Type'] = 'text/html'
-            if self.request.method != 'HEAD':
-                # The blobstore download handler raises an error whenever the
-                # status code is anything other than 200, so write the contents
-                # of the {code}.html file directly.
-                sha = manifest.paths[html_path]
-                content = blobs.read(sha)
-                self.response.out.write(content)
-        else:
-            self.response.headers['Content-Type'] = 'text/plain'
-            if self.request.method != 'HEAD':
-                self.response.out.write(str(error_code))
 
     def generate_intl_paths(self, path):
         """Generates a list of paths based on user's country & preferred langs.
