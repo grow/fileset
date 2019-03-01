@@ -36,9 +36,11 @@ import datetime
 import json
 import logging
 import os
+import threading
 import time
 import grow
 import pytz
+from concurrent import futures
 from grow.common import utils
 from grow.deployments import deployments
 from grow.deployments.destinations import base as destinations
@@ -98,6 +100,7 @@ class FilesetDestination(destinations.BaseDestination):
     def __init__(self, *args, **kwargs):
         super(FilesetDestination, self).__init__(*args, **kwargs)
         self._objectcache = None
+        self.objectcache_lock = threading.RLock()
 
     @property
     def objectcache(self):
@@ -201,21 +204,24 @@ class FilesetDestination(destinations.BaseDestination):
             'files': [],
         }
 
-        for rendered_doc in content_generator:
-            sha = rendered_doc.hash
-            path = rendered_doc.path
-            blobkey = '{server}::blob::{sha}'.format(server=server, sha=sha)
-            if not self.objectcache.get(blobkey) and not fs.blob_exists(sha):
+        with futures.ThreadPoolExecutor(max_workers=5) as executor:
+            # Map of future => doc path.
+            results = {}
+            for rendered_doc in content_generator:
+                future = executor.submit(self._upload_blob, fs, rendered_doc)
+                results[future] = rendered_doc.path
+
+            for future in futures.as_completed(results):
                 try:
-                    logging.info('uploading blob {} {}'.format(sha, path))
-                    fs.upload_blob(sha, path, rendered_doc.read())
-                    self.objectcache.add(blobkey, 1)
+                    data = future.result()
                 except Exception as e:
-                    # If the upload fails, write the objectcache to file so we
+                    # If any upload fails, write the objectcache to file so we
                     # don't lose information about what was already uploaded.
                     self.pod.podcache.write()
+                    doc_path = results.get(future)
+                    logging.error('failed to upload: {}'.format(doc_path))
                     raise
-            manifest['files'].append({'sha': sha, 'path': path})
+                manifest['files'].append(data)
 
         response = fs.upload_manifest(manifest)
         manifest_id = response.json()['manifest_id']
@@ -251,6 +257,17 @@ class FilesetDestination(destinations.BaseDestination):
             lines.append('  https://{}-dot-{}'.format(branch, server))
 
         logging.info('\n'.join(lines))
+
+    def _upload_blob(self, fs, rendered_doc):
+        sha = rendered_doc.hash
+        path = rendered_doc.path
+        blobkey = '{host}::blob::{sha}'.format(host=fs.host, sha=sha)
+        if not self.objectcache.get(blobkey) and not fs.blob_exists(sha):
+            logging.info('uploading blob {} {}'.format(sha, path))
+            fs.upload_blob(sha, path, rendered_doc.read())
+            with self.objectcache_lock:
+                self.objectcache.add(blobkey, 1)
+        return {'sha': sha, 'path': path}
 
     def _get_timestamp(self, datetime_str, timezone):
         dt = datetime.datetime.strptime(datetime_str, '%Y-%m-%d %H:%M')
