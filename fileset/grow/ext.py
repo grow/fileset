@@ -206,9 +206,15 @@ class FilesetDestination(destinations.BaseDestination):
             path = rendered_doc.path
             blobkey = '{server}::blob::{sha}'.format(server=server, sha=sha)
             if not self.objectcache.get(blobkey) and not fs.blob_exists(sha):
-                logging.info('uploading blob {} {}'.format(sha, path))
-                fs.upload_blob(sha, path, rendered_doc.read())
-                self.objectcache.add(blobkey, 1)
+                try:
+                    logging.info('uploading blob {} {}'.format(sha, path))
+                    fs.upload_blob(sha, path, rendered_doc.read())
+                    self.objectcache.add(blobkey, 1)
+                except Exception as e:
+                    # If the upload fails, write the objectcache to file so we
+                    # don't lose information about what was already uploaded.
+                    self.pod.podcache.write()
+                    raise
             manifest['files'].append({'sha': sha, 'path': path})
 
         response = fs.upload_manifest(manifest)
