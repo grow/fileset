@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import datetime
+from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import ndb
 from fileset.thirdparty import secrets
@@ -33,16 +34,29 @@ def create_auth_token(description):
 
 
 def is_token_valid(token):
+    memcache_key = 'fs-token-valid:{}'.format(token)
+    if memcache.get(memcache_key) == 'true':
+        return True
+
     ent = FilesetAuthToken.get_by_id(token)
-    if ent:
-        # Assume that if the token whenever the token is checked for validity,
-        # it is being used for some operation.
-        ent.last_used = datetime.datetime.now()
-        ent.put_async()
-    return bool(ent)
+    is_valid = bool(ent)
+
+    # TODO(stevenle): prevent datastore write contention.
+    # if is_valid:
+    #     # Assume that whenever the token is checked for validity, it is being
+    #     # used for some operation.
+    #     ent.last_used = datetime.datetime.now()
+    #     ent.put_async()
+
+    if is_valid:
+        memcache.set(memcache_key, 'true')
+    return is_valid
 
 
 def delete_token(token):
+    memcache_key = 'fs-token-valid:{}'.format(token)
+    memcache.delete(memcache_key)
+
     key = ndb.Key(FilesetAuthToken, token)
     key.delete()
 
