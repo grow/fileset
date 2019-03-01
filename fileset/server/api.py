@@ -60,13 +60,10 @@ class ManifestUploadHandler(RpcHandler):
         data = json.loads(content)
 
         paths = {}
-        files_needed = []
         for file_data in data['files']:
             sha = file_data['sha']
             path = file_data['path']
             paths[path] = sha
-            if not blobs.exists(sha):
-                files_needed.append(file_data)
 
         commit = data['commit']
         manifest_id = manifests.save(commit, paths)
@@ -74,7 +71,6 @@ class ManifestUploadHandler(RpcHandler):
         return self.json({
             'success': True,
             'manifest_id': manifest_id,
-            'files_needed': files_needed,
         })
 
 

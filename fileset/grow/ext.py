@@ -223,6 +223,7 @@ class FilesetDestination(destinations.BaseDestination):
                     raise
                 manifest['files'].append(data)
 
+        self.pod.podcache.write()
         response = fs.upload_manifest(manifest)
         manifest_id = response.json()['manifest_id']
 
