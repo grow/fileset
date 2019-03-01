@@ -65,17 +65,10 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
                 for key, value in html_headers.iteritems():
                     self.response.headers[key] = value
 
-        # Determine the branch to use from the URL, and then fetch the branch's
-        # fileset manifest.
-        branch = utils.get_branch(self.request)
-        if branch.startswith('manifest-') and branch[9:].isdigit():
-            manifest_id = int(branch[9:])
-            manifest = manifests.get(manifest_id)
-        else:
-            manifest = manifests.get_branch_manifest(branch)
+        manifest = self.get_manifest()
         if not manifest:
             manifest = manifests.get_branch_manifest(utils.DEFAULT_BRANCH)
-            return self.serve_404(manifest, path)
+            return self.serve_error(manifest, 404)
 
         # Get the SHA of the file to serve from the manifest.
         sha = None
@@ -89,7 +82,7 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             sha = manifest.paths.get(path)
 
         if not sha:
-            return self.serve_404(manifest, path)
+            return self.serve_error(manifest, 404)
 
         etag = '"{sha}"'.format(sha=sha)
         request_etag = self.request.headers.get('If-None-Match')
@@ -103,21 +96,33 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             blob_key = blobstore.create_gs_key('/gs' + gcs_path)
             self.send_blob(blob_key)
 
-    def serve_404(self, manifest, path):
-        self.response.status = 404
-        if manifest and path.endswith('.html') and '/404.html' in manifest.paths:
+    def get_manifest(self):
+        # Determine the branch to use from the URL, and then fetch the branch's
+        # fileset manifest.
+        branch = utils.get_branch(self.request)
+        if branch.startswith('manifest-') and branch[9:].isdigit():
+            manifest_id = int(branch[9:])
+            manifest = manifests.get(manifest_id)
+        else:
+            manifest = manifests.get_branch_manifest(branch)
+        return manifest
+
+    def serve_error(self, manifest, error_code):
+        self.response.status = error_code
+        html_path = '/{}.html'.format(error_code)
+        if manifest and path.endswith('.html') and html_path in manifest.paths:
             self.response.headers['Content-Type'] = 'text/html'
             if self.request.method != 'HEAD':
-                # The blobstore download handler raises an error whenever the status
-                # code is anything other than 200, so write the contents of the
-                # 404.html file directly.
-                sha = manifest.paths['/404.html']
+                # The blobstore download handler raises an error whenever the
+                # status code is anything other than 200, so write the contents
+                # of the {code}.html file directly.
+                sha = manifest.paths[html_path]
                 content = blobs.read(sha)
                 self.response.out.write(content)
         else:
             self.response.headers['Content-Type'] = 'text/plain'
             if self.request.method != 'HEAD':
-                self.response.out.write('404 Not Found')
+                self.response.out.write(str(error_code))
 
     def generate_intl_paths(self, path):
         """Generates a list of paths based on user's country & preferred langs.
