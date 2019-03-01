@@ -4,6 +4,7 @@ import hashlib
 import os
 import cloudstorage as gcs
 from google.appengine.api import app_identity
+from google.appengine.api import memcache
 
 
 class Error(Exception):
@@ -16,6 +17,10 @@ def get_gcs_path(sha):
 
 
 def exists(sha):
+    memcache_key = 'fs-blob-exists:{}'.format(sha)
+    if memcache.get(memcache_key) == '1':
+        return True
+
     gcs_path = get_gcs_path(sha)
     try:
         gcs.stat(gcs_path)
@@ -33,6 +38,9 @@ def write(sha, content, content_type):
     gcs_path = get_gcs_path(sha)
     with gcs.open(gcs_path, 'w', content_type=content_type) as fp:
         fp.write(content)
+
+    memcache_key = 'fs-blob-exists:{}'.format(sha)
+    memcache.set(memcache_key, '1')
 
 
 def read(sha):

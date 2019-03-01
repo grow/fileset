@@ -35,7 +35,7 @@ def create_auth_token(description):
 
 def is_token_valid(token):
     memcache_key = 'fs-token-valid:{}'.format(token)
-    if memcache.get(memcache_key) == 'true':
+    if memcache.get(memcache_key) == '1':
         return True
 
     ent = FilesetAuthToken.get_by_id(token)
@@ -49,7 +49,7 @@ def is_token_valid(token):
     #     ent.put_async()
 
     if is_valid:
-        memcache.set(memcache_key, 'true')
+        memcache.set(memcache_key, '1')
     return is_valid
 
 
