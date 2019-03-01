@@ -108,14 +108,21 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
                     # The blobstore download handler raises an error whenever
                     # the status code is anything other than 200, so write the
                     # contents of the {code}.html file directly to response.
-                    sha = manifest.paths[html_path]
-                    content = blobs.read(sha)
+                    content = self.read_path(html_path, manifest=manifest)
                     self.response.out.write(content)
                 return
 
         self.response.headers['Content-Type'] = 'text/plain'
         if self.request.method != 'HEAD':
             self.response.out.write(str(error_code) + '\n')
+
+    def read_path(self, path, manifest=None):
+        if not manifest:
+            manifest = self.get_manifest()
+        if manifest and path in manifest.paths:
+            sha = manifest.paths[path]
+            return blobs.read(sha)
+        return None
 
     def get_manifest(self):
         """Returns the manifest for the given request."""
