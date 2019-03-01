@@ -67,8 +67,7 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
 
         manifest = self.get_manifest()
         if not manifest:
-            manifest = manifests.get_branch_manifest(utils.DEFAULT_BRANCH)
-            return self.serve_error(manifest, 404)
+            return self.serve_error(404)
 
         # Get the SHA of the file to serve from the manifest.
         sha = None
@@ -82,7 +81,7 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             sha = manifest.paths.get(path)
 
         if not sha:
-            return self.serve_error(manifest, 404)
+            return self.serve_error(404, manifest=manifest)
 
         etag = '"{sha}"'.format(sha=sha)
         request_etag = self.request.headers.get('If-None-Match')
@@ -107,7 +106,10 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             manifest = manifests.get_branch_manifest(branch)
         return manifest
 
-    def serve_error(self, manifest, error_code):
+    def serve_error(self, error_code, manifest=None):
+        if not manifest:
+            manifest = manifests.get_branch_manifest(utils.DEFAULT_BRANCH)
+
         self.response.status = error_code
         html_path = '/{}.html'.format(error_code)
         if manifest and path.endswith('.html') and html_path in manifest.paths:
