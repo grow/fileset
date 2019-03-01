@@ -198,7 +198,10 @@ class FilesetDestination(destinations.BaseDestination):
             logging.error('"token" is required in {}'.format(CONFIG_PATH))
             return
 
-        fs = fileset.FilesetClient(server, token)
+        api_host = server
+        if branch != 'master':
+            api_host = '{}-dot-{}'.format(branch, server)
+        fs = fileset.FilesetClient(api_host, token)
         manifest = {
             'commit': self.get_commit(),
             'files': [],
@@ -262,7 +265,8 @@ class FilesetDestination(destinations.BaseDestination):
     def _upload_blob(self, fs, rendered_doc):
         sha = rendered_doc.hash
         path = rendered_doc.path
-        blobkey = '{host}::blob::{sha}'.format(host=fs.host, sha=sha)
+        blobkey = '{server}::blob::{sha}'.format(
+            server=self.config.server, sha=sha)
         if not self.objectcache.get(blobkey) and not fs.blob_exists(sha):
             logging.info('uploading blob {} {}'.format(sha, path))
             fs.upload_blob(sha, path, rendered_doc.read())
