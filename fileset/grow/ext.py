@@ -120,10 +120,15 @@ class FilesetDestination(destinations.BaseDestination):
         if self.config.server.startswith('localhost'):
             return 'master'
 
-        repo = utils.get_git_repo(self.pod.root)
-        branch = repo.active_branch.name
-        if branch.startswith('feature/'):
-            branch = branch[8:]
+        if os.environ.get('CI_COMMIT_REF_NAME'):
+            # Gitlab uses a detached git reference, so use the
+            # "CI_COMMIT_REF_NAME" environ variable instead.
+            branch = os.environ['CI_COMMIT_REF_NAME']
+        else:
+            repo = utils.get_git_repo(self.pod.root)
+            branch = repo.active_branch.name
+            if branch.startswith('feature/'):
+                branch = branch[8:]
         branch = branch.replace('/', '-').lower()
 
         # Append branch prefix.
@@ -131,10 +136,16 @@ class FilesetDestination(destinations.BaseDestination):
         return branch_prefix + branch
 
     def get_commit(self):
-        repo = utils.get_git_repo(self.pod.root)
-        commit = repo.active_branch.commit
-        sha = commit.hexsha
-        message = commit.message.split('\n', 1)[0]
+        if os.environ.get('CI_COMMIT_SHA'):
+            # Gitlab uses a detached git reference, so use the
+            # "CI_COMMIT_SHA" environ variable instead.
+            sha = os.environ['CI_COMMIT_SHA']
+            message = os.environ.get('CI_COMMIT_TITLE', '')
+        else:
+            repo = utils.get_git_repo(self.pod.root)
+            commit = repo.active_branch.commit
+            sha = commit.hexsha
+            message = commit.message.split('\n', 1)[0]
         return {
             'sha': sha,
             'message': message,
