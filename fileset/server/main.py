@@ -170,6 +170,8 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             for value, _ in acceptparse.Accept.parse(accept_lang_value):
                 lang = value.lower()
                 accept_langs.append(lang)
+        if 'en' not in accept_langs:
+            accept_langs.append('en')
 
         # Yield `/intl/<lang>_<country>/` paths.
         if hl:
