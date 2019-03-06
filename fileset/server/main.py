@@ -198,6 +198,12 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
                 yield config.INTL_PATH_FORMAT.format(locale=lang, path=path)
         for lang in accept_langs:
             yield config.INTL_PATH_FORMAT.format(locale=lang, path=path)
+            # Account for cases where the user's primary language prefrence is
+            # "en" but might also have a lower preference for another language.
+            # Yield the non-intl path for "en", assuming that the site's default
+            # language is "en"..
+            if lang == 'en':
+                yield path
 
         yield path
 
