@@ -15,6 +15,7 @@ from webob import acceptparse
 import webapp2
 
 
+DEFAULT_LANG = 'en'
 ES_419_COUNTRIES = frozenset([
     'AR',
     'BO',
@@ -160,6 +161,16 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             - /intl/fr/foo/
             - /intl/en/foo/
             - /foo/
+
+        In cases where a user prefers "en" but also has other languages in their
+        Accept-Language header, the root path is yielded in place of en, e.g.:
+
+            Accept-Language: en; fr
+
+        Would yield:
+            - /intl/en/foo/
+            - /foo/
+            - /intl/fr/foo/
         """
         hl = self.request.get('hl', '').lower()
         country = (self.request.headers.get('X-AppEngine-Country') or 'US').lower()
@@ -170,8 +181,9 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             for value, _ in acceptparse.Accept.parse(accept_lang_value):
                 lang = value.lower()
                 accept_langs.append(lang)
-        if 'en' not in accept_langs:
-            accept_langs.append('en')
+
+        if DEFAULT_LANG not in accept_langs:
+            accept_langs.append(DEFAULT_LANG)
 
         # Yield `/intl/<lang>_<country>/` paths.
         if hl:
@@ -201,11 +213,9 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             # Account for cases where the user's primary language prefrence is
             # "en" but might also have a lower preference for another language.
             # Yield the non-intl path for "en", assuming that the site's default
-            # language is "en"..
-            if lang == 'en':
+            # language is "en".
+            if lang == DEFAULT_LANG:
                 yield path
-
-        yield path
 
 
 app = redirects.RedirectMiddleware(webapp2.WSGIApplication([
