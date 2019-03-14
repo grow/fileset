@@ -160,7 +160,7 @@ objectcache.fileset.local.json
 Start an App Engine dev server.
 
 ```
-dev_appserver.py --port=8088
+dev_appserver.py --port=8088 .
 ```
 
 Deploy files to the local server.
