@@ -67,7 +67,7 @@ class FilesetPreprocessor(grow.Preprocessor):
     def __init__(self, *args, **kwargs):
         super(FilesetPreprocessor, self).__init__(*args, **kwargs)
         if deployments._destination_kinds_to_classes is None:
-            deployments._destination_kinds_to_classes = {}
+            deployments.register_builtins()
         if self.KIND not in deployments._destination_kinds_to_classes:
             deployments.register_destination(FilesetDestination)
 
