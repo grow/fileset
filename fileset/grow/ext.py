@@ -127,8 +127,9 @@ class FilesetDestination(destinations.BaseDestination):
         else:
             repo = utils.get_git_repo(self.pod.root)
             branch = repo.active_branch.name
-            if branch.startswith('feature/'):
-                branch = branch[8:]
+
+        if branch.startswith('feature/'):
+            branch = branch[8:]
         branch = branch.replace('/', '-').lower()
 
         # Append branch prefix.
