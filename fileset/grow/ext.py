@@ -120,7 +120,9 @@ class FilesetDestination(destinations.BaseDestination):
         if self.config.server.startswith('localhost'):
             return 'master'
 
-        if os.environ.get('CI_COMMIT_REF_NAME'):
+        if os.environ.get('FILESET_BRANCH_NAME'):
+            branch = os.environ['FILESET_BRANCH_NAME']
+        elif os.environ.get('CI_COMMIT_REF_NAME'):
             # Gitlab uses a detached git reference, so use the
             # "CI_COMMIT_REF_NAME" environ variable instead.
             branch = os.environ['CI_COMMIT_REF_NAME']
@@ -137,7 +139,10 @@ class FilesetDestination(destinations.BaseDestination):
         return branch_prefix + branch
 
     def get_commit(self):
-        if os.environ.get('CI_COMMIT_SHA'):
+        if os.environ.get('FILESET_COMMIT_SHA'):
+            sha = os.environ['FILESET_COMMIT_SHA']
+            message = os.environ.get('FILESET_COMMIT_TITLE', '')
+        elif os.environ.get('CI_COMMIT_SHA'):
             # Gitlab uses a detached git reference, so use the
             # "CI_COMMIT_SHA" environ variable instead.
             sha = os.environ['CI_COMMIT_SHA']
@@ -203,6 +208,8 @@ class FilesetDestination(destinations.BaseDestination):
         if server.startswith('localhost'):
             # Localhost doens't require an auth token.
             token = ''
+        elif os.environ.get('FILESET_TOKEN'):
+            token = os.environ['FILESET_TOKEN']
         elif self.pod.file_exists(CONFIG_PATH):
             token = self.pod.read_json(CONFIG_PATH)['token']
         else:
