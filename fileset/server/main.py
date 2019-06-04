@@ -4,6 +4,7 @@ import appengine_config
 
 import logging
 import os
+import urllib
 from fileset import config
 from fileset.server import blobs
 from fileset.server import manifests
@@ -52,6 +53,7 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         self.serve_path(path)
 
     def serve_path(self, path):
+        path = urllib.unquote_plus(path)
         _, ext = os.path.splitext(path)
         if not ext:
             path = utils.safe_join(path, 'index.html')
