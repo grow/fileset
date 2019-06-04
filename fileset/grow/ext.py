@@ -288,7 +288,11 @@ class FilesetDestination(destinations.BaseDestination):
             server=self.config.server, sha=sha)
         if not self.objectcache.get(blobkey) and not fs.blob_exists(sha):
             logging.info('uploading blob {} {}'.format(sha, path))
-            fs.upload_blob(sha, path, rendered_doc.read())
+            try:
+                fs.upload_blob(sha, path, rendered_doc.read())
+            except Exception as e:
+                logging.error('failed to upload {}'.format(path))
+                raise
             with self.objectcache_lock:
                 self.objectcache.add(blobkey, 1)
         return {'sha': sha, 'path': path}
