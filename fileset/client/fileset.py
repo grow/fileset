@@ -63,8 +63,11 @@ class FilesetClient(object):
             'X-Fileset-Token': self.token,
         })
         if response.status_code != 200:
+            text = response.text
+            if isinstance(text, unicode):
+                text = text.encode('utf-8')
             raise Error('blob.upload failed: {}\n{}'.format(
-                response.status_code, response.text))
+                response.status_code, text))
         return response
 
     def set_branch_manifest(self, branch, manifest_id, deploy_timestamp=None):
