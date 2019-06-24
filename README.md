@@ -120,32 +120,8 @@ gcloud app deploy --project=APPID cron.yaml index.yaml
 
 7) Generate an auth token
 
-Future:
-
-* Visit https://APPID.appspot.com/_fs/admin
-* Generate an auth token, and save the key to `.fileset.json`
-
-The `/_fs/admin` URL isn't implemented yet, so for now you'll need to launch
-the interactive console:
-
-Add to `app.yaml`:
-
-```yaml
-handlers:
-- url: /_ah/admin/interactive.*
-  script: google.appengine.ext.admin.application
-  login: admin
-```
-
-Go to https://APPID.appspot.com/_ah/admin/interactive and run the following:
-
-```python
-import appengine_config
-from fileset.server import auth
-
-token = auth.create_auth_token('DESCRIPTION')
-print '{"token": "%s"}' % token
-```
+* Visit https://APPID.appspot.com/_fs/token
+* Save the generated token to `.fileset.json` in your project folder
 
 8) Add to `.gitignore`
 
