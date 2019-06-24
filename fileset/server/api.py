@@ -9,6 +9,7 @@ import webapp2
 from fileset.server import auth
 from fileset.server import blobs
 from fileset.server import manifests
+from google.appengine.api import users
 from google.appengine.ext import ndb
 
 
@@ -143,10 +144,36 @@ class CronTimedDeployHandler(RpcHandler):
         })
 
 
+class TokenHandler(webapp2.RequestHandler):
+    """Handler that generates an auth token for a user."""
+
+    def get(self):
+        self.response.headers['Content-Type'] = 'text/plain'
+
+        if not users.is_current_user_admin():
+            self.response.set_status(401)
+            self.response.out.write('unauthorized')
+            return
+
+        user = users.get_current_user()
+        desc = user.email()
+        token = auth.create_auth_token(desc)
+
+        lines = [
+            'save the following to .fileset.json:',
+            '',
+            '{"token": "%s"}' % token,
+            '',
+        ]
+        payload = '\n'.join(lines)
+        self.response.out.write(payload)
+
+
 app = ndb.toplevel(webapp2.WSGIApplication([
     webapp2.Route('/_fs/api/blob.exists', handler=BlobExistsHandler),
     webapp2.Route('/_fs/api/blob.upload', handler=BlobUploadHandler),
     webapp2.Route('/_fs/api/branch.set_manifest', handler=BranchSetManifestHandler),
     webapp2.Route('/_fs/api/cron.timed_deploy', handler=CronTimedDeployHandler),
     webapp2.Route('/_fs/api/manifest.upload', handler=ManifestUploadHandler),
+    webapp2.Route('/_fs/token', handler=TokenHandler),
 ]))

@@ -8,3 +8,8 @@ handlers:
 - url: /_fs/api/.*
   script: fileset.server.api.app
   secure: always
+
+- url: /_fs/token
+  script: fileset.server.api.app
+  secure: always
+  login: admin
