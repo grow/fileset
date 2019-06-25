@@ -46,7 +46,7 @@ skip_files:
 - ^(.*/)?index\.yaml
 - ^(.*/)?index\.yml
 - ^(.*/)?run_tests.py
-- ^extensions/(?!(__init__.py|cloudstorage|fileset)).*
+- ^extensions/(?!(__init__.py|babel|cloudstorage|fileset)).*
 - (?!(extensions|appengine_config\.py)).*
 ```
 
