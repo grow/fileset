@@ -5,6 +5,7 @@ import appengine_config
 import logging
 import os
 import urllib
+from babel import languages
 from fileset import config
 from fileset.server import blobs
 from fileset.server import manifests
@@ -175,7 +176,8 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             - /intl/fr/foo/
         """
         hl = self.request.get('hl', '').lower()
-        country = (self.request.headers.get('X-AppEngine-Country') or 'US').lower()
+        country_header = self.request.headers.get('X-AppEngine-Country') or 'US'
+        country = country_header.lower()
 
         accept_lang_value = self.request.headers.get('Accept-Language')
         accept_langs = []
@@ -196,6 +198,13 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
                 locale = '{lang}_{country}'.format(lang=lang, country=country)
                 yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
         for lang in accept_langs:
+            locale = '{lang}_{country}'.format(lang=lang, country=country)
+            yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
+
+        # Yield de-facto languages for the country.
+        country_langs = languages.get_official_languages(country, de_facto=True)
+        for country_lang in country_langs:
+            lang = country_lang.lower()
             locale = '{lang}_{country}'.format(lang=lang, country=country)
             yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
 
