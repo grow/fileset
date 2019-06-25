@@ -5,7 +5,6 @@ import appengine_config
 import logging
 import os
 import urllib
-from babel import languages
 from fileset import config
 from fileset.server import blobs
 from fileset.server import manifests
@@ -16,6 +15,17 @@ from google.appengine.ext.webapp import blobstore_handlers
 from webob import acceptparse
 import webapp2
 
+# Babel dependency was added in a later release. To prevent projects from
+# breaking when they upgrade, use a conditional import to ensure backwards
+# compatibility.
+try:
+    import babel
+    from babel import languages
+except ImportError:
+    babel = None
+    logging.error('babel not imported. update the following line in app.yaml:')
+    logging.error(
+        '- ^extensions/(?!(__init__.py|babel|cloudstorage|fileset)).*')
 
 DEFAULT_LANG = 'en'
 ES_419_COUNTRIES = frozenset([
@@ -202,11 +212,13 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
 
         # Yield de-facto languages for the country.
-        country_langs = languages.get_official_languages(country, de_facto=True)
-        for country_lang in country_langs:
-            lang = country_lang.lower()
-            locale = '{lang}_{country}'.format(lang=lang, country=country)
-            yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
+        if babel:
+            country_langs = languages.get_official_languages(
+                country, de_facto=True)
+            for country_lang in country_langs:
+                lang = country_lang.lower()
+                locale = '{lang}_{country}'.format(lang=lang, country=country)
+                yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
 
         # Yield special paths for es-419 countries.
         if country.upper() in ES_419_COUNTRIES and 'es' in accept_langs:
