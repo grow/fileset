@@ -166,7 +166,7 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         If ?hl= query param is in the URL, the hl value will be prioritized
         above other paths. For example, for /foo/?hl=de-DE:
             - /intl/de-de_ca/foo/
-            - /intl/de_ca/foo/
+            - /intl/de_de/foo/
             - /intl/fr_ca/foo/
             - /intl/en_ca/foo/
             - /intl/de-de/foo/
@@ -204,9 +204,10 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
             locale = '{lang}_{country}'.format(lang=hl, country=country)
             yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
             if '-' in hl:
-                lang = hl.split('-', 1)[0]
-                locale = '{lang}_{country}'.format(lang=lang, country=country)
+                # For something like ?hl=fr-CA, yield the fr_ca path.
+                locale = hl.replace('-', '_')
                 yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
+
         for lang in accept_langs:
             locale = '{lang}_{country}'.format(lang=lang, country=country)
             yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
