@@ -208,13 +208,14 @@ class FilesetDestination(destinations.BaseDestination):
         if server.startswith('localhost'):
             # Localhost doens't require an auth token.
             token = ''
-        elif os.environ.get('FILESET_TOKEN'):
-            token = os.environ['FILESET_TOKEN']
         elif self.pod.file_exists(CONFIG_PATH):
             token = self.pod.read_json(CONFIG_PATH)['token']
+        elif os.environ.get('FILESET_TOKEN'):
+            token = os.environ['FILESET_TOKEN']
         else:
-            # TODO(stevenle): print instructions on how to create an auth token.
             logging.error('"token" is required in {}'.format(CONFIG_PATH))
+            logging.error(
+                'visit {}/_fs/token to generate a new token'.format(server))
             return
 
         api_host = server
