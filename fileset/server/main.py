@@ -2,6 +2,7 @@
 
 import appengine_config
 
+import collections
 import logging
 import os
 import urllib
@@ -52,6 +53,12 @@ ES_419_COUNTRIES = frozenset([
     'UY',
     'VE',
 ])
+
+LANG_FALLBACKS = {
+    'zh-cn': ('zh-hans', 'zh-hant', 'zh'),
+    'zh-hk': ('zh-hant', 'zh'),
+    'zh-tw': ('zh-hant', 'zh'),
+}
 
 
 class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
@@ -166,7 +173,7 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         If ?hl= query param is in the URL, the hl value will be prioritized
         above other paths. For example, for /foo/?hl=de-DE:
             - /intl/de-de_ca/foo/
-            - /intl/de_de/foo/
+            - /intl/de_ca/foo/
             - /intl/fr_ca/foo/
             - /intl/en_ca/foo/
             - /intl/de-de/foo/
@@ -188,58 +195,98 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         hl = self.request.get('hl', '').lower()
         country_header = self.request.headers.get('X-AppEngine-Country') or 'US'
         country = country_header.lower()
+        fallback_langs = self.get_fallback_langs(country=country)
 
-        accept_lang_value = self.request.headers.get('Accept-Language')
-        accept_langs = []
-        if accept_lang_value:
-            for value, _ in acceptparse.Accept.parse(accept_lang_value):
-                lang = value.lower()
-                accept_langs.append(lang)
-
-        if DEFAULT_LANG not in accept_langs:
-            accept_langs.append(DEFAULT_LANG)
-
-        # Yield `/intl/<lang>_<country>/` paths.
-        if hl:
-            locale = '{lang}_{country}'.format(lang=hl, country=country)
+        # Yield `/intl/<lang>_<country>/` paths (with country).
+        for lang in fallback_langs:
+            locale = '{}_{}'.format(lang, country)
             yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
-            if '-' in hl:
-                # For something like ?hl=fr-CA, yield the fr_ca path.
-                locale = hl.replace('-', '_')
+            # For language variants like "zh-hant", try "zh_hant_<country>".
+            if '-' in lang:
+                locale = '{}_{}'.format(lang.replace('-', '_'), country)
                 yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
 
-        for lang in accept_langs:
-            locale = '{lang}_{country}'.format(lang=lang, country=country)
+        # Yield `/intl/<lang>/` paths (no country).
+        for lang in fallback_langs:
+            locale = lang
             yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
+            # For dashed language variants like "pt-br", yield "pt_br".
+            if '-' in lang:
+                locale = lang.replace('-', '_')
+                yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
+            # For the default lang, yield the root path.
+            if lang == DEFAULT_LANG:
+                yield path
 
-        # Yield de-facto languages for the country.
+    def get_fallback_langs(self, country=None):
+        """Returns an ordered list of languages to serve to the user.
+
+        The languages are determined by the following (in order):
+
+            - The ?hl= query parameter
+            - The browser's Accept-Language header
+            - The country's de-facto languages
+            - The site's default language ("en")
+        """
+        # Use OrderedDict so that duplicates are automatically removed, while
+        # preserving order.
+        fallback_langs = collections.OrderedDict()
+
+        # Add language from ?hl= query parameter.
+        hl = self.request.get('hl', '').lower()
+        if hl:
+            fallback_langs[hl] = True
+            if '-' in hl:
+                hl_lang = hl.split('-', 1)[0]
+                fallback_langs[hl_lang] = True
+
+        # Add languages from the Accept-Language header.
+        accept_lang_value = self.request.headers.get('Accept-Language')
+        if accept_lang_value:
+            for value, _ in acceptparse.Accept.parse(accept_lang_value):
+                accept_lang = value.lower()
+                fallback_langs[accept_lang] = True
+
+                # Some langs (e.g. "zh-tw") should fall back to special language
+                # variants (e.g. "zh-hant").
+                for fallback_lang in LANG_FALLBACKS.get(accept_lang, []):
+                    fallback_langs[fallback_lang] = True
+
+        # Add the user's country's de-facto languages.
+        if country:
+            country_langs = self.get_country_langs(country)
+            for country_lang in country_langs:
+                lang = country_lang.lower()
+                fallback_langs[lang] = True
+
+        # Add "en" as the final fallback.
+        if DEFAULT_LANG not in fallback_langs:
+            fallback_langs[DEFAULT_LANG] = True
+
+        return fallback_langs.keys()
+
+    def get_country_langs(self, country):
+        """Returns the de-facto languages for a country."""
+        # Special overrides for Chinese-speaking countries.
+        if country == 'cn':
+            return ('zh-cn', 'zh-hans', 'zh-hant', 'zh')
+        if country == 'hk':
+            return ('zh-hk', 'zh-hant', 'zh')
+        if country == 'tw':
+            return ('zh-tw', 'zh-hant', 'zh')
+
+        # If babel is enabled, return the de-facto langauges for the country.
         if babel:
             country_langs = languages.get_official_languages(
                 country, de_facto=True)
-            for country_lang in country_langs:
-                lang = country_lang.lower()
-                locale = '{lang}_{country}'.format(lang=lang, country=country)
-                yield config.INTL_PATH_FORMAT.format(locale=locale, path=path)
+        else:
+            country_langs = []
 
-        # Yield special paths for es-419 countries.
-        if country.upper() in ES_419_COUNTRIES and 'es' in accept_langs:
-            yield config.INTL_PATH_FORMAT.format(locale='es_419', path=path)
-            yield config.INTL_PATH_FORMAT.format(locale='es-419', path=path)
+        # Add es-419 for Latin American countries.
+        if country in ES_419_COUNTRIES:
+            country_langs.append('es-419')
 
-        # Yield paths for `/intl/<lang>/` (no country).
-        if hl:
-            yield config.INTL_PATH_FORMAT.format(locale=hl, path=path)
-            if '-' in hl:
-                lang = hl.split('-', 1)[0]
-                yield config.INTL_PATH_FORMAT.format(locale=lang, path=path)
-        for lang in accept_langs:
-            yield config.INTL_PATH_FORMAT.format(locale=lang, path=path)
-            # Account for cases where the user's primary language prefrence is
-            # "en" but might also have a lower preference for another language.
-            # Yield the non-intl path for "en", assuming that the site's default
-            # language is "en".
-            if lang == DEFAULT_LANG:
-                yield path
+        return country_langs
 
 
 app = redirects.RedirectMiddleware(webapp2.WSGIApplication([
