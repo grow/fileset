@@ -112,6 +112,22 @@ class BlobExistsHandler(RpcHandler):
         })
 
 
+class BranchGetManifestHandler(RpcHandler):
+
+    def _handle(self):
+        content = self.request.body
+        data = json.loads(content)
+
+        branch = data['branch']
+        manifest = manifests.get_branch_manifest(branch)
+
+        return self.json({
+            'success': True,
+            'branch': branch,
+            'manifest': manifest,
+        })
+
+
 class BranchSetManifestHandler(RpcHandler):
 
     def _handle(self):
@@ -172,6 +188,7 @@ class TokenHandler(webapp2.RequestHandler):
 app = ndb.toplevel(webapp2.WSGIApplication([
     webapp2.Route('/_fs/api/blob.exists', handler=BlobExistsHandler),
     webapp2.Route('/_fs/api/blob.upload', handler=BlobUploadHandler),
+    webapp2.Route('/_fs/api/branch.get_manifest', handler=BranchGetManifestHandler),
     webapp2.Route('/_fs/api/branch.set_manifest', handler=BranchSetManifestHandler),
     webapp2.Route('/_fs/api/cron.timed_deploy', handler=CronTimedDeployHandler),
     webapp2.Route('/_fs/api/manifest.upload', handler=ManifestUploadHandler),
