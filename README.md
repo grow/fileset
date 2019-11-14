@@ -123,6 +123,16 @@ gcloud app deploy --project=APPID cron.yaml index.yaml
 * Visit https://APPID.appspot.com/_fs/token
 * Save the generated token to `.fileset.json` in your project folder
 
+If `/_fs/token` is unimplemented, generate `.fileset.json` using:
+
+```
+import appengine_config
+from fileset.server import auth
+
+token = auth.create_auth_token('DESCRIPTION')
+print '{"token": "%s"}' % token
+```
+
 8) Add to `.gitignore`
 
 ```
