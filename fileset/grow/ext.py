@@ -122,6 +122,10 @@ class FilesetDestination(destinations.BaseDestination):
 
         if os.environ.get('FILESET_BRANCH_NAME'):
             branch = os.environ['FILESET_BRANCH_NAME']
+        elif os.environ.get('BRANCH_NAME'):
+            # Google Cloud Build uses "BRANCH_NAME" environ variable.
+            # https://cloud.google.com/cloud-build/docs/configuring-builds/substitute-variable-values
+            branch = os.environ['BRANCH_NAME']
         elif os.environ.get('CI_COMMIT_REF_NAME'):
             # Gitlab uses a detached git reference, so use the
             # "CI_COMMIT_REF_NAME" environ variable instead.
