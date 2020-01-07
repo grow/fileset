@@ -70,6 +70,21 @@ class FilesetClient(object):
                 response.status_code, text))
         return response
 
+    def get_branch_manifest(self, branch):
+        data = {
+            'branch': branch,
+        }
+        payload = json.dumps(data)
+        url = '{host}/_fs/api/branch.get_manifest'.format(host=self.host)
+        response = requests.post(url, data=payload, headers={
+            'Content-Type': 'application/json',
+            'X-Fileset-Token': self.token,
+        })
+        if response.status_code != 200:
+            raise Error('branch.get_manifest failed: {}\n{}'.format(
+                response.status_code, response.text))
+        return response
+
     def set_branch_manifest(self, branch, manifest_id, deploy_timestamp=None):
         data = {
             'branch': branch,

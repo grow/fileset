@@ -231,6 +231,10 @@ class FilesetDestination(destinations.BaseDestination):
             'files': [],
         }
 
+        # Warm the cache by fetching the current manifest.
+        if not server.startswith('localhost'):
+            self._warm_up_cache(fs, branch)
+
         with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # Map of future => doc path.
             results = {}
@@ -308,3 +312,16 @@ class FilesetDestination(destinations.BaseDestination):
         diff = localized_dt - datetime.datetime(1970, 1, 1, tzinfo=pytz.utc)
         ts = int(diff.total_seconds())
         return ts
+
+    def _warm_up_cache(self, fs, branch):
+        try:
+            response = fs.get_branch_manifest(branch)
+            manifest = response.get('manifest')
+            if not manifest:
+                return
+            paths = manifest.get('paths') or {}
+            for path, blobkey in paths.iteritems():
+                    self.objectcache.add(blobkey, 1)
+        except:
+            logging.error('failed to warm cache')
+            pass
