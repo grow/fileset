@@ -29,6 +29,18 @@ class RedirectMiddleware(object):
             (302, '/bar/:var', 'https://example.com/bar/$var/'),
             (302, '/baz/*wild', '/qux/$wild/'),
         )
+
+    When combined with variable, pattern-based paths, a specific path can be
+    prevented from redirecting by using `'no-redirect'` in place of the status
+    code, e.g.:
+
+        fileset_REDIRECTS = (
+            (302, '/foo/:bar/', '/new/path/$bar/'),
+            ('no-redirect', '/foo/baz/', None),
+        )
+
+    In the example above, `/foo/hello/` would redirect to `/new/path/hello/`,
+    but `/foo/baz/` would not redirect and would serve the path as normal.
     """
 
     def __init__(self, app):
@@ -146,6 +158,8 @@ class RedirectMiddleware(object):
             return None, None
 
         code, url = result[0], result[1]
+        if code == 'no-redirect':
+            return None, None
 
         # Replace `$variable` placeholders in the URL.
         if '$' in url:
