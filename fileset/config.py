@@ -54,6 +54,9 @@ class ConfigDefaults(object):
     # Whether to enforce https for all Env.PROD requests.
     REQUIRE_HTTPS = False
 
+    # Whether to require trailing slash (except for paths that have an ext).
+    REQUIRE_TRAILING_SLASH = False
+
     # HTTP response headers to append to certain requests. Right now, only
     # supports headers for HTML files.
     RESPONSE_HEADERS = {
@@ -73,4 +76,5 @@ INTL_PATH_FORMAT = config.INTL_PATH_FORMAT
 REDIRECTS = config.REDIRECTS
 REQUIRE_AUTH = config.REQUIRE_AUTH
 REQUIRE_HTTPS = config.REQUIRE_HTTPS
+REQUIRE_TRAILING_SLASH = config.REQUIRE_TRAILING_SLASH
 RESPONSE_HEADERS = config.RESPONSE_HEADERS

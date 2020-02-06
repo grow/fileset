@@ -14,6 +14,7 @@ CANONICAL_DOMAIN = config.CANONICAL_DOMAIN
 REDIRECTS = config.REDIRECTS
 REQUIRE_AUTH = config.REQUIRE_AUTH
 REQUIRE_HTTPS = config.REQUIRE_HTTPS
+REQUIRE_TRAILING_SLASH = config.REQUIRE_TRAILING_SLASH
 
 
 class RedirectMiddleware(object):
@@ -84,6 +85,15 @@ class RedirectMiddleware(object):
                     domain, request.path_qs)
                 logging.info('redirecting: 302 {} => {}'.format(
                     request.url, redirect_uri))
+                return self.redirect(redirect_uri, code=302)
+
+        # Check for trailing slash.
+        if REQUIRE_TRAILING_SLASH:
+            _, ext = os.path.splitext(request.path)
+            if not ext and not request.path.endswith('/'):
+                redirect_uri = request.path + '/'
+                if request.query_string:
+                    redirect_uri += '?{}'.format(request.query_string)
                 return self.redirect(redirect_uri, code=302)
 
         # Require authorized login on Env.STAGING.
