@@ -47,8 +47,11 @@ class FilesetClient(object):
             'X-Fileset-Token': self.token,
         })
         if response.status_code != 200:
+            text = response.text
+            if isinstance(text, unicode):
+                text = text.encode('utf-8')
             raise Error('blob.exists failed: {}\n{}'.format(
-                response.status_code, response.text))
+                response.status_code, text))
         return response.json()['exists']
 
     def upload_blob(self, sha, filepath, content):
