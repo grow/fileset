@@ -120,6 +120,8 @@ class FilesetDestination(destinations.BaseDestination):
         if self.config.server.startswith('localhost'):
             return 'master'
 
+        self.pod.logger.info('os.environ:')
+        self.pod.logger.info(os.environ)
         if os.environ.get('FILESET_BRANCH_NAME'):
             branch = os.environ['FILESET_BRANCH_NAME']
         elif os.environ.get('BRANCH_NAME'):
