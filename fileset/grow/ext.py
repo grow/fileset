@@ -96,6 +96,7 @@ class FilesetDestination(destinations.BaseDestination):
         # Prefix to append to the branch name when branch="auto" is used.
         branch_prefix = messages.StringField(4)
         timed_deploys = messages.MessageField(TimedDeployConfig, 5)
+        debug = messages.BooleanField(6)
 
     def __init__(self, *args, **kwargs):
         super(FilesetDestination, self).__init__(*args, **kwargs)
@@ -120,6 +121,9 @@ class FilesetDestination(destinations.BaseDestination):
         if self.config.server.startswith('localhost'):
             return 'master'
 
+        if self.config.debug:
+            self.pod.logger.info('environ: {}'.format(os.environ))
+
         if os.environ.get('FILESET_BRANCH_NAME'):
             branch = os.environ['FILESET_BRANCH_NAME']
         elif os.environ.get('BRANCH_NAME'):
@@ -143,6 +147,9 @@ class FilesetDestination(destinations.BaseDestination):
         return branch_prefix + branch
 
     def get_commit(self):
+        if self.config.debug:
+            self.pod.logger.info('environ: {}'.format(os.environ))
+
         if os.environ.get('FILESET_COMMIT_SHA'):
             sha = os.environ['FILESET_COMMIT_SHA']
             message = os.environ.get('FILESET_COMMIT_TITLE', '')
