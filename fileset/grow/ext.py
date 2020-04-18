@@ -146,6 +146,11 @@ class FilesetDestination(destinations.BaseDestination):
         if os.environ.get('FILESET_COMMIT_SHA'):
             sha = os.environ['FILESET_COMMIT_SHA']
             message = os.environ.get('FILESET_COMMIT_TITLE', '')
+        elif os.environ.get('COMMIT_SHA'):
+            # Google Cloud Build uses "BRANCH_NAME" environ variable.
+            # https://cloud.google.com/cloud-build/docs/configuring-builds/substitute-variable-values
+            sha = os.environ['COMMIT_SHA']
+            message = ''
         elif os.environ.get('CI_COMMIT_SHA'):
             # Gitlab uses a detached git reference, so use the
             # "CI_COMMIT_SHA" environ variable instead.
@@ -153,9 +158,13 @@ class FilesetDestination(destinations.BaseDestination):
             message = os.environ.get('CI_COMMIT_TITLE', '')
         else:
             repo = utils.get_git_repo(self.pod.root)
-            commit = repo.active_branch.commit
-            sha = commit.hexsha
-            message = commit.message.split('\n', 1)[0]
+            if repo and repo.active_branch:
+                commit = repo.active_branch.commit
+                sha = commit.hexsha
+                message = commit.message.split('\n', 1)[0]
+            else:
+                sha = ''
+                message = ''
         return {
             'sha': sha,
             'message': message,
