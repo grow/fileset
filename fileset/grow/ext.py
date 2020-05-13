@@ -342,7 +342,8 @@ class FilesetDestination(destinations.BaseDestination):
             paths = manifest.get('paths') or {}
             for path, blobkey in paths.iteritems():
                     self.objectcache.add(blobkey, 1)
+            logging.info('warmed up fileset cache')
         except Exception as e:
-            logging.error('failed to warm cache')
+            logging.error('failed to warm fileset cache')
             logging.error(e)
             pass
