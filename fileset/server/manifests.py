@@ -17,6 +17,11 @@ class FilesetManifest(ndb.Model):
             return None
         return self.key.id()
 
+    def json(self):
+        return {
+            'paths': self.paths,
+        }
+
 
 class FilesetBranchManifest(ndb.Model):
     # Keyed by the name of the branch.
