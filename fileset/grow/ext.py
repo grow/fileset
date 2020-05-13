@@ -306,7 +306,7 @@ class FilesetDestination(destinations.BaseDestination):
 
         logging.info('\n'.join(lines))
 
-    def _upload_blob(self, fs, rendered_doc):
+    def _upload_blob(self, fs, rendered_doc, num_tries=0):
         sha = rendered_doc.hash
         path = rendered_doc.path
         blobkey = '{server}::blob::{sha}'.format(
@@ -317,6 +317,10 @@ class FilesetDestination(destinations.BaseDestination):
                 fs.upload_blob(sha, path, rendered_doc.read())
             except Exception as e:
                 logging.error('failed to upload {}'.format(path))
+                if num_tries <= 2:
+                    logging.error('retrying upload blob...')
+                    return self._upload_blob(
+                        fs, rendered_doc, num_tries=num_tries + 1)
                 raise
             with self.objectcache_lock:
                 self.objectcache.add(blobkey, 1)
@@ -338,6 +342,7 @@ class FilesetDestination(destinations.BaseDestination):
             paths = manifest.get('paths') or {}
             for path, blobkey in paths.iteritems():
                     self.objectcache.add(blobkey, 1)
-        except:
+        except Exception as e:
             logging.error('failed to warm cache')
+            logging.error(e)
             pass
