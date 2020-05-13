@@ -86,7 +86,7 @@ class FilesetClient(object):
         if response.status_code != 200:
             raise Error('branch.get_manifest failed: {}\n{}'.format(
                 response.status_code, response.text))
-        return response
+        return response.json()
 
     def set_branch_manifest(self, branch, manifest_id, deploy_timestamp=None):
         data = {
