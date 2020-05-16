@@ -77,12 +77,8 @@ See `fileset/config.py` for full list of config options.
 5) Update `podspec.yaml`
 
 ```yaml
-extensions:
-  preprocessors:
-  - extensions.fileset.grow.ext.FilesetPreprocessor
-
-preprocessors:
-- kind: fileset
+ext:
+- extensions.fileset.grow.ext.FilesetExtension
 
 deployments:
   localhost:
