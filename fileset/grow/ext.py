@@ -322,7 +322,7 @@ class FilesetDestination(destinations.BaseDestination):
             if not manifest:
                 return
             paths = manifest.get('paths') or {}
-            for path, blobkey in paths.iteritems():
+            for path, blobkey in paths.items():
                     self.objectcache.add(blobkey, 1)
             logging.info('warmed up fileset cache')
         except Exception as e:
