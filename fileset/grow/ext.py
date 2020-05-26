@@ -36,47 +36,29 @@ import datetime
 import json
 import logging
 import os
+import sys
 import threading
 import time
 import grow
 import pytz
 from concurrent import futures
+from grow import extensions
 from grow.common import utils
 from grow.deployments import deployments
 from grow.deployments.destinations import base as destinations
+from grow.extensions import hooks
 from grow.pods import env
 from fileset.client import fileset
 from protorpc import messages
 
-__all__ = ('FilesetDestination', 'FilesetPreprocessor')
+__all__ = ('FilesetDestination', 'FilesetExtension', 'FilesetPreprocessor')
+
+IS_PY3 = sys.version_info[0] >= 3
 
 OBJECTCACHE_ID = 'fileset'
 OBJECTCACHE_ID_LOCAL = 'fileset.local'
 
 CONFIG_PATH = '/.fileset.json'
-
-
-class FilesetPreprocessor(grow.Preprocessor):
-    """Preprocessor for grow that sets up the fileset deploy destination."""
-
-    KIND = 'fileset'
-
-    class Config(messages.Message):
-        pass
-
-    def __init__(self, *args, **kwargs):
-        super(FilesetPreprocessor, self).__init__(*args, **kwargs)
-        if deployments._destination_kinds_to_classes is None:
-            deployments.register_builtins()
-        if self.KIND not in deployments._destination_kinds_to_classes:
-            deployments.register_destination(FilesetDestination)
-
-    def run(self, build=True):
-        # Intentionally empty. Since preprocessors are initialized before
-        # deployment destinations, we use the preprocessor's constructor to
-        # inject a custom destination into grow's list of registered
-        # destinations.
-        pass
 
 
 class TimedDeployConfig(messages.Message):
@@ -347,3 +329,49 @@ class FilesetDestination(destinations.BaseDestination):
             logging.error('failed to warm fileset cache')
             logging.error(e)
             pass
+
+
+class FilesetPreprocessor(grow.Preprocessor):
+    """Preprocessor for grow that sets up the fileset deploy destination.
+
+    Deprecated: Use `FilesetExtension` instead.
+    """
+
+    KIND = 'fileset'
+
+    class Config(messages.Message):
+        pass
+
+    def __init__(self, *args, **kwargs):
+        super(FilesetPreprocessor, self).__init__(*args, **kwargs)
+        if IS_PY3:
+            self.pod.logger.error('Update your fileset config to support grow 1.0.0')
+            self.pod.logger.error('More info: https://github.com/grow/fileset/wiki/Migrate-to-grow-1.0.0')
+        else:
+            if deployments._destination_kinds_to_classes is None:
+                deployments.register_builtins()
+            if self.KIND not in deployments._destination_kinds_to_classes:
+                deployments.register_destination(FilesetDestination)
+
+    def run(self, build=True):
+        # Intentionally empty. Since preprocessors are initialized before
+        # deployment destinations, we use the preprocessor's constructor to
+        # inject a custom destination into grow's list of registered
+        # destinations.
+        pass
+
+
+class FilesetDeploymentRegisterHook(hooks.DeploymentRegisterHook):
+    """Hook to register a FilesetDestination."""
+
+    def trigger(self, previous_result, deployments, *_args, **_kwargs):
+        deployments.register_destination(FilesetDestination)
+
+
+class FilesetExtension(extensions.BaseExtension):
+    """Extension for handling core deployment functionality."""
+
+    @property
+    def available_hooks(self):
+        """Returns the available hook classes."""
+        return [FilesetDeploymentRegisterHook]
