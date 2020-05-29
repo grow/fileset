@@ -124,7 +124,7 @@ class BranchGetManifestHandler(RpcHandler):
         return self.json({
             'success': True,
             'branch': branch,
-            'manifest': manifest.json(),
+            'manifest': manifest.json() if manifest else None,
         })
 
 
