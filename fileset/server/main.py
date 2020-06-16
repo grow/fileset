@@ -90,6 +90,10 @@ class MainHandler(blobstore_handlers.BlobstoreDownloadHandler):
         if not manifest:
             return self.serve_error(404)
 
+        # Treat 404.html as a special file.
+        if path.endswith('/404.html'):
+            return self.serve_error(404, manifest=manifest)
+
         # Get the SHA of the file to serve from the manifest.
         sha = None
         if path.endswith('.html'):
